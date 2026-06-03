@@ -11,7 +11,7 @@
     3: { min: 0, max: 100,  label: "Medium" },
     4: { min: 0, max: 1000, label: "Hard" },
   };
-  const OP_LABEL = { add: "Addition", sub: "Subtraction", mul: "Multiply", div: "Divide", mix: "Mixed", times: "Times tables", skip: "Skip counting", bonds: "Number bonds", fact: "Fact families", time: "Telling time", money: "Counting money", frac: "Fractions" };
+  const OP_LABEL = { add: "Addition", sub: "Subtraction", mul: "Multiply", div: "Divide", mix: "Mixed", times: "Times tables", skip: "Skip counting", bonds: "Number bonds", fact: "Fact families", time: "Telling time", money: "Counting money", frac: "Fractions", place: "Place value" };
   const OP_SIGN  = { add: "+", sub: "−", mul: "×", div: "÷", times: "×" };
 
   // Skip counting: full-width sequence rows the kid fills in (count by 2s/5s/10s).
@@ -70,6 +70,18 @@
     harder: { dens: [2, 3, 4, 5, 6, 8, 10], shapes: ["pie", "bar"] }, // up to tenths
   };
 
+  // Place value: a pile of base-ten (Dienes) blocks — flats (100s, a 10×10 grid),
+  // rods (10s, a 1×10 column) and unit cubes (1s) — and the kid writes the number
+  // the blocks make. Same visual-read pattern as clocks, coins and fractions.
+  // `hundreds` caps at 5 flats so the pile stays a clean single row; `blocks`
+  // mixes 2- and 3-digit numbers (the head "base ten blocks" intent).
+  const PLACE_COUNT = 8;   // block piles per sheet (2 cols × 4 rows)
+  const PLACE_SETS = {
+    tens:     { min: 10,  max: 99,  label: "tens & ones" },
+    hundreds: { min: 100, max: 599, label: "hundreds, tens & ones" },
+    blocks:   { min: 12,  max: 599, label: "base-ten blocks" },
+  };
+
   const state = {
     op: "add",
     level: 1,
@@ -80,6 +92,7 @@
     prec: "hour",  // telling-time precision: hour/half/quarter/five (op === "time")
     coinset: "coins", // money set: pennies/dimes/coins/bills (op === "money")
     fracset: "pie",   // fraction set: halves/pie/bar/harder (op === "frac")
+    pvset: "tens",    // place-value set: tens/hundreds/blocks (op === "place")
     count: 20,
     cols: 2,
     title: "Math Practice",
@@ -288,6 +301,26 @@
         if (seen.has(key)) continue; // no identical shape+fraction twice on a sheet
         seen.add(key);
         out.push({ num, den, shape });
+      }
+      state.problems = out;
+      bumpCounter();
+      return;
+    }
+
+    // Place value: each problem is a number shown as base-ten blocks. Decompose
+    // into hundreds (flats), tens (rods) and ones (unit cubes); the kid reads the
+    // pile and writes the number. The answer key fills the blank coral.
+    if (state.op === "place") {
+      const cfg = PLACE_SETS[state.pvset] || PLACE_SETS.tens;
+      const out = [];
+      const seen = new Set();
+      let guard = 0;
+      while (out.length < PLACE_COUNT && guard < PLACE_COUNT * 160) {
+        guard++;
+        const n = rnd(cfg.min, cfg.max);
+        if (seen.has(n)) continue; // no identical number twice on a sheet
+        seen.add(n);
+        out.push({ n, h: Math.floor(n / 100), t: Math.floor((n % 100) / 10), o: n % 10 });
       }
       state.problems = out;
       bumpCounter();
@@ -504,6 +537,67 @@
     );
   }
 
+  // One pile of base-ten blocks as inline SVG: `h` flats (10×10 grid = 100),
+  // `t` rods (1×10 column = 10) and `o` unit cubes (= 1), laid out left→right
+  // and bottom-aligned. The viewBox grows to fit the pile, so CSS just scales it
+  // to the cell width. The exact same routine builds the SEO-page hero demo.
+  const PV_U = 6; // edge of one unit cube, in SVG units
+  function pvFlat(x, y) {
+    const S = PV_U * 10;
+    let g = `<rect class="pv-flat" x="${x}" y="${y}" width="${S}" height="${S}"/>`;
+    for (let k = 1; k < 10; k++) {
+      const px = x + k * PV_U, py = y + k * PV_U;
+      g += `<line class="pv-grid" x1="${px}" y1="${y}" x2="${px}" y2="${y + S}"/>`;
+      g += `<line class="pv-grid" x1="${x}" y1="${py}" x2="${x + S}" y2="${py}"/>`;
+    }
+    return g;
+  }
+  function pvRod(x, y) {
+    const H = PV_U * 10;
+    let g = `<rect class="pv-rod" x="${x}" y="${y}" width="${PV_U}" height="${H}"/>`;
+    for (let k = 1; k < 10; k++) {
+      const py = y + k * PV_U;
+      g += `<line class="pv-grid" x1="${x}" y1="${py}" x2="${x + PV_U}" y2="${py}"/>`;
+    }
+    return g;
+  }
+  function pvUnit(x, y) {
+    return `<rect class="pv-unit" x="${x}" y="${y}" width="${PV_U}" height="${PV_U}"/>`;
+  }
+  function placeBlocksSvg(h, t, o) {
+    const U = PV_U, TALL = U * 10, topY = 2, GROUP = 14;
+    const parts = [];
+    let x = 0;
+    for (let i = 0; i < h; i++) { parts.push(pvFlat(x, topY)); x += TALL + 6; }
+    if (h) x += GROUP - 6;
+    for (let i = 0; i < t; i++) { parts.push(pvRod(x, topY)); x += U + 5; }
+    if (t) x += GROUP - 5;
+    if (o) {
+      for (let i = 0; i < o; i++) {
+        const uy = topY + TALL - U - i * (U + 1);
+        parts.push(pvUnit(x, uy));
+      }
+      x += U;
+    }
+    const W = Math.max(x, U) + 2, VH = topY + TALL + 2;
+    return (
+      `<svg class="pv-svg" viewBox="0 0 ${W} ${VH}" role="img" aria-label="base ten blocks showing ${h * 100 + t * 10 + o}">` +
+      parts.join("") +
+      `</svg>`
+    );
+  }
+
+  // The number the kid writes below the blocks; blank on the worksheet, filled
+  // coral on the answer key.
+  function placeAnswer(p, showAnswers) {
+    const shown = showAnswers ? " shown" : "";
+    const val = showAnswers ? String(p.n) : "";
+    return (
+      `<span class="pv-eq">=</span>` +
+      `<span class="pv-blank${shown}">${val}</span>`
+    );
+  }
+
   function sheetEl({ showAnswers, isKey }) {
     const sheet = document.createElement("div");
     sheet.className = "sheet";
@@ -536,6 +630,7 @@
     const isTime = state.op === "time";
     const isMoney = state.op === "money";
     const isFrac = state.op === "frac";
+    const isPlace = state.op === "place";
     const grid = document.createElement("div");
     grid.className = isSkip
       ? "problems problems--seq"
@@ -549,6 +644,8 @@
       ? "problems problems--money"
       : isFrac
       ? "problems problems--frac"
+      : isPlace
+      ? "problems problems--place"
       : "problems";
     // Skip-counting rows are full-width sequences; number bonds are a fixed 3-up
     // diagram grid; fact families a fixed 2-up triangle grid; telling time a
@@ -565,12 +662,20 @@
       ? "repeat(2, 1fr)"
       : isFrac
       ? "repeat(2, 1fr)"
+      : isPlace
+      ? "repeat(2, 1fr)"
       : `repeat(${state.cols}, 1fr)`;
-    grid.dataset.cols = isSkip ? 1 : isBonds ? 3 : isFact ? 2 : isTime ? 3 : isMoney ? 2 : isFrac ? 2 : state.cols; // lets CSS scale type/gaps so equations never fragment in narrow columns
+    grid.dataset.cols = isSkip ? 1 : isBonds ? 3 : isFact ? 2 : isTime ? 3 : isMoney ? 2 : isFrac ? 2 : isPlace ? 2 : state.cols; // lets CSS scale type/gaps so equations never fragment in narrow columns
     state.problems.forEach((p, i) => {
       const row = document.createElement("div");
       row.className = "problem";
-      if (isFrac) {
+      if (isPlace) {
+        row.classList.add("pv-cell");
+        row.innerHTML =
+          `<span class="p-num">${i + 1}.</span>` +
+          `<div class="pv-blocks">${placeBlocksSvg(p.h, p.t, p.o)}</div>` +
+          `<div class="pv-ans">${placeAnswer(p, showAnswers)}</div>`;
+      } else if (isFrac) {
         row.classList.add("frac-cell");
         row.innerHTML =
           `<span class="p-num">${i + 1}.</span>` +
@@ -658,6 +763,9 @@
     } else if (state.op === "frac") {
       const setLabel = { halves: "halves, thirds & quarters", pie: "fraction circles", bar: "fraction bars", harder: "up to tenths" }[state.fracset] || "fractions";
       footMeta = `Fractions · ${setLabel} · ${state.problems.length} shapes`;
+    } else if (state.op === "place") {
+      const setLabel = { tens: "tens & ones", hundreds: "hundreds, tens & ones", blocks: "base-ten blocks" }[state.pvset] || "place value";
+      footMeta = `Place value · ${setLabel} · ${state.problems.length} numbers`;
     } else {
       const L = LEVELS[state.level];
       footMeta = `${OP_LABEL[state.op]} · ${L.label} (${L.min}–${L.max}) · ${state.count} problems`;
@@ -691,6 +799,9 @@
     } else if (state.op === "frac") {
       const t = { halves: "halves, thirds & quarters", pie: "fraction circles", bar: "fraction bars", harder: "up to tenths" }[state.fracset] || "fractions";
       $("#previewTag").textContent = `Fractions · ${t}`;
+    } else if (state.op === "place") {
+      const t = { tens: "tens & ones", hundreds: "hundreds, tens & ones", blocks: "base-ten blocks" }[state.pvset] || "place value";
+      $("#previewTag").textContent = `Place value · ${t}`;
     } else {
       const L = LEVELS[state.level];
       $("#previewTag").textContent = `${OP_LABEL[state.op]} · ${L.label}`;
@@ -721,7 +832,7 @@
       btn.classList.add("is-active");
       state[key] = cast(btn.dataset[key]); // data-op→op, data-level→level, data-cols→cols, data-table→table, data-interval→interval
       if (key === "op") applyOpVisibility();
-      if (key === "op" || key === "level" || key === "table" || key === "interval" || key === "total" || key === "fam" || key === "prec" || key === "coinset" || key === "fracset") generate();
+      if (key === "op" || key === "level" || key === "table" || key === "interval" || key === "total" || key === "fam" || key === "prec" || key === "coinset" || key === "fracset" || key === "pvset") generate();
       refresh();
     });
   }
@@ -737,6 +848,7 @@
     const isTime = state.op === "time";
     const isMoney = state.op === "money";
     const isFrac = state.op === "frac";
+    const isPlace = state.op === "place";
     const tableField = $("#tableField");
     const intervalField = $("#intervalField");
     const totalField = $("#totalField");
@@ -744,6 +856,7 @@
     const precField = $("#precField");
     const coinsetField = $("#coinsetField");
     const fracsetField = $("#fracsetField");
+    const pvsetField = $("#pvsetField");
     const levelField = $("#levelField");
     const countField = $("#countField");
     const layoutField = $("#layoutField");
@@ -754,9 +867,10 @@
     if (precField) precField.hidden = !isTime;
     if (coinsetField) coinsetField.hidden = !isMoney;
     if (fracsetField) fracsetField.hidden = !isFrac;
-    if (levelField) levelField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac;
-    if (countField) countField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac;
-    if (layoutField) layoutField.hidden = isSkip || isBonds || isFact || isTime || isMoney || isFrac;
+    if (pvsetField) pvsetField.hidden = !isPlace;
+    if (levelField) levelField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace;
+    if (countField) countField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace;
+    if (layoutField) layoutField.hidden = isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace;
   }
 
   function init() {
@@ -770,6 +884,7 @@
     wireSeg("#precSeg", "prec", (v) => v);
     wireSeg("#coinsetSeg", "coinset", (v) => v);
     wireSeg("#fracsetSeg", "fracset", (v) => v);
+    wireSeg("#pvsetSeg", "pvset", (v) => v);
 
     $("#count").addEventListener("input", (e) => {
       state.count = parseInt(e.target.value, 10);
@@ -856,6 +971,10 @@
     const fracset = params.get("set");
     if (["halves", "pie", "bar", "harder"].includes(fracset)) state.fracset = fracset;
 
+    // place value reuses the `set` param too; values disjoint from money/fractions
+    const pvset = params.get("set");
+    if (["tens", "hundreds", "blocks"].includes(pvset)) state.pvset = pvset;
+
     let n = parseInt(params.get("n"), 10);
     if (n >= 10 && n <= 40) {
       n = n % 2 === 0 ? n : n - 1; // slider is even-stepped
@@ -887,6 +1006,7 @@
     setActive("#precSeg", "prec", state.prec);
     setActive("#coinsetSeg", "coinset", state.coinset);
     setActive("#fracsetSeg", "fracset", state.fracset);
+    setActive("#pvsetSeg", "pvset", state.pvset);
     applyOpVisibility();
 
     const count = $("#count");

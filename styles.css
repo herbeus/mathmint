@@ -441,6 +441,22 @@ input[type="range"]::-moz-range-thumb {
 .frac-bar { display: block; width: 2.0em; height: 2px; background: #111; margin: 3px 0; }
 .frac-cell-n.shown, .frac-cell-d.shown { color: var(--coral-deep); font-weight: 700; }
 
+/* ---------- place value (base-ten blocks) ---------- */
+.problems--place { grid-template-columns: repeat(2, 1fr); gap: 24px 28px; }
+.pv-cell {
+  position: relative; padding-left: 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+}
+.pv-cell .p-num { position: absolute; top: 0; left: 2px; font-size: 12px; min-width: 0; }
+.pv-blocks { display: flex; align-items: flex-end; justify-content: center; min-height: 72px; width: 100%; }
+.pv-svg { width: 100%; max-width: 300px; height: auto; max-height: 84px; display: block; }
+.pv-flat, .pv-rod, .pv-unit { fill: var(--mint); stroke: #111; stroke-width: 1.4; }
+.pv-grid { stroke: #111; stroke-width: 0.6; }
+.pv-ans { margin-top: 12px; display: inline-flex; align-items: baseline; gap: 8px; font-family: var(--font-mono); font-size: 20px; }
+.pv-eq { font-weight: 700; }
+.pv-blank { display: inline-block; min-width: 2.8em; border-bottom: 2px solid #111; text-align: center; }
+.pv-blank.shown { border-color: var(--coral-deep); color: var(--coral-deep); font-weight: 700; }
+
 .sheet-foot {
   margin-top: 40px; padding-top: 14px; border-top: 1px solid var(--line);
   display: flex; justify-content: space-between;
@@ -665,6 +681,7 @@ input[type="range"]::-moz-range-thumb {
 .ws-bond-demo .clock-svg { max-width: 190px; }
 .ws-bond-demo .frac-svg--pie { max-width: 132px; }
 .ws-bond-demo .frac-svg--bar { max-width: 230px; }
+.ws-bond-demo .pv-svg { max-width: 260px; }
 .ws-bond-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; text-align: center; }
 .ws-bond-grid .ws-seq-title { text-align: center; }
 .ws-bond-grid .ws-bond-demo { margin: 8px auto 0; }
