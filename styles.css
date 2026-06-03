@@ -457,6 +457,29 @@ input[type="range"]::-moz-range-thumb {
 .pv-blank { display: inline-block; min-width: 2.8em; border-bottom: 2px solid #111; text-align: center; }
 .pv-blank.shown { border-color: var(--coral-deep); color: var(--coral-deep); font-weight: 700; }
 
+/* ---------- rounding (read the number line) ---------- */
+.problems--round { grid-template-columns: repeat(2, 1fr); gap: 26px 28px; }
+.round-cell {
+  position: relative; padding-left: 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+}
+.round-cell .p-num { position: absolute; top: 0; left: 2px; font-size: 12px; min-width: 0; }
+.rl-wrap { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 84px; }
+.rl-svg { width: 100%; max-width: 300px; height: auto; display: block; overflow: visible; }
+.rl-axis { stroke: #111; stroke-width: 2.2; }
+.rl-tick { stroke: #111; stroke-width: 2.2; }
+.rl-tick--mid { stroke: #8f969d; stroke-width: 1.8; stroke-dasharray: 3 3; }
+.rl-end { font-family: var(--font-mono); font-size: 14px; font-weight: 700; fill: #111; text-anchor: middle; }
+.rl-mid { font-family: var(--font-mono); font-size: 12px; font-weight: 700; fill: #6b7178; text-anchor: middle; }
+.rl-stem { stroke: var(--coral-deep); stroke-width: 2; }
+.rl-caret { fill: var(--coral-deep); stroke: var(--coral-deep); stroke-width: 1; stroke-linejoin: round; }
+.rl-num { font-family: var(--font-mono); font-size: 18px; font-weight: 700; fill: var(--coral-deep); text-anchor: middle; }
+.rl-ans { margin-top: 12px; display: inline-flex; align-items: baseline; gap: 7px; font-family: var(--font-mono); font-size: 18px; }
+.rl-qnum { font-weight: 700; }
+.rl-qlab { font-family: var(--font-body); font-weight: 600; font-size: 14px; color: #444; }
+.rl-blank { display: inline-block; min-width: 2.8em; border-bottom: 2px solid #111; text-align: center; }
+.rl-blank.shown { border-color: var(--coral-deep); color: var(--coral-deep); font-weight: 700; }
+
 .sheet-foot {
   margin-top: 40px; padding-top: 14px; border-top: 1px solid var(--line);
   display: flex; justify-content: space-between;
@@ -682,6 +705,7 @@ input[type="range"]::-moz-range-thumb {
 .ws-bond-demo .frac-svg--pie { max-width: 132px; }
 .ws-bond-demo .frac-svg--bar { max-width: 230px; }
 .ws-bond-demo .pv-svg { max-width: 260px; }
+.ws-bond-demo .rl-svg { max-width: 280px; }
 .ws-bond-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; text-align: center; }
 .ws-bond-grid .ws-seq-title { text-align: center; }
 .ws-bond-grid .ws-bond-demo { margin: 8px auto 0; }

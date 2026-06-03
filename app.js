@@ -11,7 +11,7 @@
     3: { min: 0, max: 100,  label: "Medium" },
     4: { min: 0, max: 1000, label: "Hard" },
   };
-  const OP_LABEL = { add: "Addition", sub: "Subtraction", mul: "Multiply", div: "Divide", mix: "Mixed", times: "Times tables", skip: "Skip counting", bonds: "Number bonds", fact: "Fact families", time: "Telling time", money: "Counting money", frac: "Fractions", place: "Place value" };
+  const OP_LABEL = { add: "Addition", sub: "Subtraction", mul: "Multiply", div: "Divide", mix: "Mixed", times: "Times tables", skip: "Skip counting", bonds: "Number bonds", fact: "Fact families", time: "Telling time", money: "Counting money", frac: "Fractions", place: "Place value", round: "Rounding" };
   const OP_SIGN  = { add: "+", sub: "−", mul: "×", div: "÷", times: "×" };
 
   // Skip counting: full-width sequence rows the kid fills in (count by 2s/5s/10s).
@@ -82,6 +82,20 @@
     blocks:   { min: 12,  max: 599, label: "base-ten blocks" },
   };
 
+  // Rounding: a number plotted on a short number line between the two "round"
+  // numbers it sits between (e.g. 40 — 50 for nearest 10), with the midpoint
+  // marked. The kid sees which end the number is closer to and writes what it
+  // rounds to. Each problem carries its own `target` (10 or 100) so the line's
+  // endpoints/midpoint and the rounding rule (5/50 rounds up) derive from it —
+  // the same visual-read pattern as clocks, coins, fractions and blocks. The
+  // `mixed` set varies the target per problem, so kids must read the line.
+  const ROUND_COUNT = 8;   // number lines per sheet (2 cols × 4 rows)
+  const ROUND_SETS = {
+    tens:     { label: "nearest 10",        modes: [{ t: 10,  min: 11,  max: 98  }] },
+    hundreds: { label: "nearest 100",       modes: [{ t: 100, min: 101, max: 989 }] },
+    mixed:    { label: "nearest 10 or 100", modes: [{ t: 10, min: 11, max: 989 }, { t: 100, min: 101, max: 989 }] },
+  };
+
   const state = {
     op: "add",
     level: 1,
@@ -93,6 +107,7 @@
     coinset: "coins", // money set: pennies/dimes/coins/bills (op === "money")
     fracset: "pie",   // fraction set: halves/pie/bar/harder (op === "frac")
     pvset: "tens",    // place-value set: tens/hundreds/blocks (op === "place")
+    roundset: "tens", // rounding set: tens/hundreds/mixed (op === "round")
     count: 20,
     cols: 2,
     title: "Math Practice",
@@ -321,6 +336,34 @@
         if (seen.has(n)) continue; // no identical number twice on a sheet
         seen.add(n);
         out.push({ n, h: Math.floor(n / 100), t: Math.floor((n % 100) / 10), o: n % 10 });
+      }
+      state.problems = out;
+      bumpCounter();
+      return;
+    }
+
+    // Rounding: each problem is a number sitting between the two round numbers
+    // it falls between, on a number line. lo/hi are the neighbouring multiples
+    // of the target; mid is the decision point; the number rounds up when it's
+    // at or past the midpoint (the 5/50-rounds-up rule). The kid reads the line
+    // and writes what the number rounds to; the key fills the blank coral.
+    if (state.op === "round") {
+      const cfg = ROUND_SETS[state.roundset] || ROUND_SETS.tens;
+      const out = [];
+      const seen = new Set();
+      let guard = 0;
+      while (out.length < ROUND_COUNT && guard < ROUND_COUNT * 200) {
+        guard++;
+        const m = cfg.modes[rnd(0, cfg.modes.length - 1)];
+        const t = m.t;
+        const n = rnd(m.min, m.max);
+        if (n % t === 0) continue; // exclude exact multiples — every problem needs real rounding
+        const lo = Math.floor(n / t) * t, hi = lo + t, mid = lo + t / 2;
+        const answer = (n - lo) >= t / 2 ? hi : lo;
+        const key = `${n}-${t}`;
+        if (seen.has(key)) continue; // no identical number+target twice on a sheet
+        seen.add(key);
+        out.push({ n, target: t, lo, hi, mid, answer });
       }
       state.problems = out;
       bumpCounter();
@@ -598,6 +641,42 @@
     );
   }
 
+  // One rounding number line as inline SVG: a horizontal axis from lo to hi
+  // with end ticks + labels, a dashed midpoint tick + label, and a coral marker
+  // (caret + stem + number) at the number's proportional spot. The same routine
+  // builds the SEO-page hero demo, so the printed line matches the landing page.
+  const RL_X1 = 44, RL_X2 = 256, RL_Y = 60; // axis endpoints + baseline, in SVG units
+  function roundLineSvg(p) {
+    const span = RL_X2 - RL_X1;
+    const xn = (RL_X1 + ((p.n - p.lo) / p.target) * span).toFixed(1);
+    return (
+      `<svg class="rl-svg" viewBox="0 0 300 96" role="img" aria-label="number line from ${p.lo} to ${p.hi} with ${p.n} marked">` +
+      `<line class="rl-axis" x1="${RL_X1}" y1="${RL_Y}" x2="${RL_X2}" y2="${RL_Y}"/>` +
+      `<line class="rl-tick" x1="${RL_X1}" y1="${RL_Y - 8}" x2="${RL_X1}" y2="${RL_Y + 8}"/>` +
+      `<line class="rl-tick" x1="${RL_X2}" y1="${RL_Y - 8}" x2="${RL_X2}" y2="${RL_Y + 8}"/>` +
+      `<line class="rl-tick rl-tick--mid" x1="${(RL_X1 + RL_X2) / 2}" y1="${RL_Y - 11}" x2="${(RL_X1 + RL_X2) / 2}" y2="${RL_Y + 11}"/>` +
+      `<text class="rl-end" x="${RL_X1}" y="${RL_Y + 24}">${p.lo}</text>` +
+      `<text class="rl-mid" x="${(RL_X1 + RL_X2) / 2}" y="${RL_Y + 24}">${p.mid}</text>` +
+      `<text class="rl-end" x="${RL_X2}" y="${RL_Y + 24}">${p.hi}</text>` +
+      `<line class="rl-stem" x1="${xn}" y1="${RL_Y - 2}" x2="${xn}" y2="28"/>` +
+      `<polygon class="rl-caret" points="${xn},${RL_Y - 1} ${(+xn - 5).toFixed(1)},${RL_Y - 10} ${(+xn + 5).toFixed(1)},${RL_Y - 10}"/>` +
+      `<text class="rl-num" x="${xn}" y="20">${p.n}</text>` +
+      `</svg>`
+    );
+  }
+
+  // The "n rounds to ___" line below a number line; blank on the worksheet,
+  // filled coral on the answer key.
+  function roundAnswer(p, showAnswers) {
+    const shown = showAnswers ? " shown" : "";
+    const val = showAnswers ? String(p.answer) : "";
+    return (
+      `<span class="rl-qnum">${p.n}</span>` +
+      `<span class="rl-qlab">rounds to</span>` +
+      `<span class="rl-blank${shown}">${val}</span>`
+    );
+  }
+
   function sheetEl({ showAnswers, isKey }) {
     const sheet = document.createElement("div");
     sheet.className = "sheet";
@@ -631,6 +710,7 @@
     const isMoney = state.op === "money";
     const isFrac = state.op === "frac";
     const isPlace = state.op === "place";
+    const isRound = state.op === "round";
     const grid = document.createElement("div");
     grid.className = isSkip
       ? "problems problems--seq"
@@ -646,6 +726,8 @@
       ? "problems problems--frac"
       : isPlace
       ? "problems problems--place"
+      : isRound
+      ? "problems problems--round"
       : "problems";
     // Skip-counting rows are full-width sequences; number bonds are a fixed 3-up
     // diagram grid; fact families a fixed 2-up triangle grid; telling time a
@@ -664,12 +746,20 @@
       ? "repeat(2, 1fr)"
       : isPlace
       ? "repeat(2, 1fr)"
+      : isRound
+      ? "repeat(2, 1fr)"
       : `repeat(${state.cols}, 1fr)`;
-    grid.dataset.cols = isSkip ? 1 : isBonds ? 3 : isFact ? 2 : isTime ? 3 : isMoney ? 2 : isFrac ? 2 : isPlace ? 2 : state.cols; // lets CSS scale type/gaps so equations never fragment in narrow columns
+    grid.dataset.cols = isSkip ? 1 : isBonds ? 3 : isFact ? 2 : isTime ? 3 : isMoney ? 2 : isFrac ? 2 : isPlace ? 2 : isRound ? 2 : state.cols; // lets CSS scale type/gaps so equations never fragment in narrow columns
     state.problems.forEach((p, i) => {
       const row = document.createElement("div");
       row.className = "problem";
-      if (isPlace) {
+      if (isRound) {
+        row.classList.add("round-cell");
+        row.innerHTML =
+          `<span class="p-num">${i + 1}.</span>` +
+          `<div class="rl-wrap">${roundLineSvg(p)}</div>` +
+          `<div class="rl-ans">${roundAnswer(p, showAnswers)}</div>`;
+      } else if (isPlace) {
         row.classList.add("pv-cell");
         row.innerHTML =
           `<span class="p-num">${i + 1}.</span>` +
@@ -766,6 +856,9 @@
     } else if (state.op === "place") {
       const setLabel = { tens: "tens & ones", hundreds: "hundreds, tens & ones", blocks: "base-ten blocks" }[state.pvset] || "place value";
       footMeta = `Place value · ${setLabel} · ${state.problems.length} numbers`;
+    } else if (state.op === "round") {
+      const setLabel = { tens: "to the nearest 10", hundreds: "to the nearest 100", mixed: "to the nearest 10 or 100" }[state.roundset] || "rounding";
+      footMeta = `Rounding · ${setLabel} · ${state.problems.length} numbers`;
     } else {
       const L = LEVELS[state.level];
       footMeta = `${OP_LABEL[state.op]} · ${L.label} (${L.min}–${L.max}) · ${state.count} problems`;
@@ -802,6 +895,9 @@
     } else if (state.op === "place") {
       const t = { tens: "tens & ones", hundreds: "hundreds, tens & ones", blocks: "base-ten blocks" }[state.pvset] || "place value";
       $("#previewTag").textContent = `Place value · ${t}`;
+    } else if (state.op === "round") {
+      const t = { tens: "to the nearest 10", hundreds: "to the nearest 100", mixed: "nearest 10 or 100" }[state.roundset] || "rounding";
+      $("#previewTag").textContent = `Rounding · ${t}`;
     } else {
       const L = LEVELS[state.level];
       $("#previewTag").textContent = `${OP_LABEL[state.op]} · ${L.label}`;
@@ -832,7 +928,7 @@
       btn.classList.add("is-active");
       state[key] = cast(btn.dataset[key]); // data-op→op, data-level→level, data-cols→cols, data-table→table, data-interval→interval
       if (key === "op") applyOpVisibility();
-      if (key === "op" || key === "level" || key === "table" || key === "interval" || key === "total" || key === "fam" || key === "prec" || key === "coinset" || key === "fracset" || key === "pvset") generate();
+      if (key === "op" || key === "level" || key === "table" || key === "interval" || key === "total" || key === "fam" || key === "prec" || key === "coinset" || key === "fracset" || key === "pvset" || key === "roundset") generate();
       refresh();
     });
   }
@@ -849,6 +945,7 @@
     const isMoney = state.op === "money";
     const isFrac = state.op === "frac";
     const isPlace = state.op === "place";
+    const isRound = state.op === "round";
     const tableField = $("#tableField");
     const intervalField = $("#intervalField");
     const totalField = $("#totalField");
@@ -857,6 +954,7 @@
     const coinsetField = $("#coinsetField");
     const fracsetField = $("#fracsetField");
     const pvsetField = $("#pvsetField");
+    const roundsetField = $("#roundsetField");
     const levelField = $("#levelField");
     const countField = $("#countField");
     const layoutField = $("#layoutField");
@@ -868,9 +966,10 @@
     if (coinsetField) coinsetField.hidden = !isMoney;
     if (fracsetField) fracsetField.hidden = !isFrac;
     if (pvsetField) pvsetField.hidden = !isPlace;
-    if (levelField) levelField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace;
-    if (countField) countField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace;
-    if (layoutField) layoutField.hidden = isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace;
+    if (roundsetField) roundsetField.hidden = !isRound;
+    if (levelField) levelField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound;
+    if (countField) countField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound;
+    if (layoutField) layoutField.hidden = isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound;
   }
 
   function init() {
@@ -885,6 +984,7 @@
     wireSeg("#coinsetSeg", "coinset", (v) => v);
     wireSeg("#fracsetSeg", "fracset", (v) => v);
     wireSeg("#pvsetSeg", "pvset", (v) => v);
+    wireSeg("#roundsetSeg", "roundset", (v) => v);
 
     $("#count").addEventListener("input", (e) => {
       state.count = parseInt(e.target.value, 10);
@@ -975,6 +1075,11 @@
     const pvset = params.get("set");
     if (["tens", "hundreds", "blocks"].includes(pvset)) state.pvset = pvset;
 
+    // rounding reuses the `set` param; tens/hundreds overlap place value's keys
+    // but op gates which one renders, so cross-setting is harmless
+    const roundset = params.get("set");
+    if (["tens", "hundreds", "mixed"].includes(roundset)) state.roundset = roundset;
+
     let n = parseInt(params.get("n"), 10);
     if (n >= 10 && n <= 40) {
       n = n % 2 === 0 ? n : n - 1; // slider is even-stepped
@@ -1007,6 +1112,7 @@
     setActive("#coinsetSeg", "coinset", state.coinset);
     setActive("#fracsetSeg", "fracset", state.fracset);
     setActive("#pvsetSeg", "pvset", state.pvset);
+    setActive("#roundsetSeg", "roundset", state.roundset);
     applyOpVisibility();
 
     const count = $("#count");
