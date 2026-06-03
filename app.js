@@ -11,7 +11,7 @@
     3: { min: 0, max: 100,  label: "Medium" },
     4: { min: 0, max: 1000, label: "Hard" },
   };
-  const OP_LABEL = { add: "Addition", sub: "Subtraction", mul: "Multiply", div: "Divide", mix: "Mixed", times: "Times tables", skip: "Skip counting", bonds: "Number bonds", fact: "Fact families", time: "Telling time", money: "Counting money", frac: "Fractions", place: "Place value", round: "Rounding", cmp: "Comparing numbers" };
+  const OP_LABEL = { add: "Addition", sub: "Subtraction", mul: "Multiply", div: "Divide", mix: "Mixed", times: "Times tables", skip: "Skip counting", bonds: "Number bonds", fact: "Fact families", time: "Telling time", money: "Counting money", frac: "Fractions", place: "Place value", round: "Rounding", cmp: "Comparing numbers", eo: "Even & odd" };
   const OP_SIGN  = { add: "+", sub: "−", mul: "×", div: "÷", times: "×" };
 
   // Skip counting: full-width sequence rows the kid fills in (count by 2s/5s/10s).
@@ -110,6 +110,20 @@
     to1000: { min: 100, max: 999, barMax: 1000, label: "numbers to 1,000" },
   };
 
+  // Even & odd: deciding a number's parity. For small numbers (the to20 set) the
+  // number's counters are drawn two-to-a-column — a clean grid of pairs reads as
+  // even, while an odd number leaves one lone counter with no partner. Once
+  // numbers grow past counting (to100/to1000) the rule shifts to the ones digit
+  // alone (0,2,4,6,8 → even), so the number is shown with its last digit boxed.
+  // The kid writes "even" or "odd". ~half of each sheet is even, half odd so both
+  // answers get equal practice — the same visual-read pattern as the other types.
+  const EO_COUNT = 8;     // numbers per sheet (2 cols × 4 rows)
+  const EO_SETS = {
+    to20:   { min: 2,   max: 20,  view: "dots",  label: "numbers to 20" },
+    to100:  { min: 10,  max: 99,  view: "digit", label: "numbers to 100" },
+    to1000: { min: 100, max: 999, view: "digit", label: "numbers to 1,000" },
+  };
+
   const state = {
     op: "add",
     level: 1,
@@ -123,6 +137,7 @@
     pvset: "tens",    // place-value set: tens/hundreds/blocks (op === "place")
     roundset: "tens", // rounding set: tens/hundreds/mixed (op === "round")
     cmpset: "to20",   // comparing set: to20/to100/to1000 (op === "cmp")
+    eoset: "to20",    // even/odd set: to20/to100/to1000 (op === "eo")
     count: 20,
     cols: 2,
     title: "Math Practice",
@@ -408,6 +423,30 @@
         seen.add(key);
         const sign = a > b ? ">" : a < b ? "<" : "=";
         out.push({ a, b, sign, barMax: cfg.barMax });
+      }
+      state.problems = out;
+      bumpCounter();
+      return;
+    }
+
+    // Even & odd: each problem is a single number whose parity the kid names.
+    // We alternate the wanted parity across the sheet so it lands ~half even,
+    // half odd; if a random draw has the wrong parity we nudge it by one (kept
+    // inside the set's range). The `view` (dots/digit) rides along per problem.
+    if (state.op === "eo") {
+      const cfg = EO_SETS[state.eoset] || EO_SETS.to20;
+      const out = [];
+      const seen = new Set();
+      let guard = 0;
+      while (out.length < EO_COUNT && guard < EO_COUNT * 200) {
+        guard++;
+        const wantEven = out.length % 2 === 0; // balance the sheet half/half
+        let n = rnd(cfg.min, cfg.max);
+        if ((n % 2 === 0) !== wantEven) n = n + 1 <= cfg.max ? n + 1 : n - 1;
+        if (n < cfg.min || n > cfg.max) continue;
+        if (seen.has(n)) continue; // no repeated number on a sheet
+        seen.add(n);
+        out.push({ n, answer: n % 2 === 0 ? "even" : "odd", view: cfg.view });
       }
       state.problems = out;
       bumpCounter();
@@ -756,6 +795,50 @@
     );
   }
 
+  // Even/odd "pairing" counters for one number (the to20 set): the counters drawn
+  // two-to-a-column. Full pairs read as even; an odd number leaves one lone
+  // counter in the last column with no partner below, drawn coral + dashed so
+  // "the one with no buddy" is obvious. Kids decide parity by pairing the dots —
+  // the concrete model behind even/odd, the same see-it-first hook as the others.
+  function evenOddDotsSvg(n) {
+    const r = 9, gapX = 26, gapY = 26;
+    const pairs = Math.floor(n / 2), leftover = n % 2, cols = pairs + leftover;
+    const x0 = (300 - cols * gapX) / 2 + gapX / 2;
+    const yTop = 26, yBot = yTop + gapY;
+    let dots = "";
+    for (let c = 0; c < pairs; c++) {
+      const cx = x0 + c * gapX;
+      dots += `<circle class="eo-dot" cx="${cx}" cy="${yTop}" r="${r}"/>`;
+      dots += `<circle class="eo-dot" cx="${cx}" cy="${yBot}" r="${r}"/>`;
+    }
+    if (leftover) dots += `<circle class="eo-dot eo-dot--odd" cx="${x0 + pairs * gapX}" cy="${yTop}" r="${r}"/>`;
+    return `<svg class="eo-svg" viewBox="0 0 300 78" role="img" aria-label="${n} counters in pairs">${dots}</svg>`;
+  }
+
+  // Even/odd "last digit" view for bigger numbers (to100/to1000): the whole
+  // number shown large with its ones digit boxed — parity is decided by that last
+  // digit alone, so the box trains the eye on exactly the digit that matters.
+  function evenOddDigitSvg(n) {
+    const s = String(n), ones = s.slice(-1), head = s.slice(0, -1);
+    return (
+      `<div class="eo-digits">` +
+      `<span class="eo-digit">${head}</span>` +
+      `<span class="eo-digit eo-digit--ones">${ones}</span>` +
+      `</div>`
+    );
+  }
+
+  // The "even or odd?" answer line; the box is blank on the worksheet and shows
+  // the word "even" or "odd" coral on the answer key.
+  function evenOddAnswer(p, showAnswers) {
+    const shown = showAnswers ? " shown" : "";
+    const word = showAnswers ? p.answer : "";
+    return (
+      `<span class="eo-q">even or odd?</span>` +
+      `<span class="eo-box${shown}">${word}</span>`
+    );
+  }
+
   function sheetEl({ showAnswers, isKey }) {
     const sheet = document.createElement("div");
     sheet.className = "sheet";
@@ -791,6 +874,7 @@
     const isPlace = state.op === "place";
     const isRound = state.op === "round";
     const isCmp = state.op === "cmp";
+    const isEo = state.op === "eo";
     const grid = document.createElement("div");
     grid.className = isSkip
       ? "problems problems--seq"
@@ -810,6 +894,8 @@
       ? "problems problems--round"
       : isCmp
       ? "problems problems--cmp"
+      : isEo
+      ? "problems problems--eo"
       : "problems";
     // Skip-counting rows are full-width sequences; number bonds are a fixed 3-up
     // diagram grid; fact families a fixed 2-up triangle grid; telling time a
@@ -832,8 +918,10 @@
       ? "repeat(2, 1fr)"
       : isCmp
       ? "repeat(2, 1fr)"
+      : isEo
+      ? "repeat(2, 1fr)"
       : `repeat(${state.cols}, 1fr)`;
-    grid.dataset.cols = isSkip ? 1 : isBonds ? 3 : isFact ? 2 : isTime ? 3 : isMoney ? 2 : isFrac ? 2 : isPlace ? 2 : isRound ? 2 : isCmp ? 2 : state.cols; // lets CSS scale type/gaps so equations never fragment in narrow columns
+    grid.dataset.cols = isSkip ? 1 : isBonds ? 3 : isFact ? 2 : isTime ? 3 : isMoney ? 2 : isFrac ? 2 : isPlace ? 2 : isRound ? 2 : isCmp ? 2 : isEo ? 2 : state.cols; // lets CSS scale type/gaps so equations never fragment in narrow columns
     state.problems.forEach((p, i) => {
       const row = document.createElement("div");
       row.className = "problem";
@@ -843,6 +931,12 @@
           `<span class="p-num">${i + 1}.</span>` +
           `<div class="cmp-bars">${compareBarsSvg(p)}</div>` +
           `<div class="cmp-ans">${compareAnswer(p, showAnswers)}</div>`;
+      } else if (isEo) {
+        row.classList.add("eo-cell");
+        row.innerHTML =
+          `<span class="p-num">${i + 1}.</span>` +
+          `<div class="eo-vis">${p.view === "dots" ? evenOddDotsSvg(p.n) : evenOddDigitSvg(p.n)}</div>` +
+          `<div class="eo-ans">${evenOddAnswer(p, showAnswers)}</div>`;
       } else if (isRound) {
         row.classList.add("round-cell");
         row.innerHTML =
@@ -952,6 +1046,9 @@
     } else if (state.op === "cmp") {
       const setLabel = { to20: "numbers to 20", to100: "numbers to 100", to1000: "numbers to 1,000" }[state.cmpset] || "comparing numbers";
       footMeta = `Comparing numbers · ${setLabel} · ${state.problems.length} pairs`;
+    } else if (state.op === "eo") {
+      const setLabel = { to20: "numbers to 20", to100: "numbers to 100", to1000: "numbers to 1,000" }[state.eoset] || "even & odd";
+      footMeta = `Even & odd · ${setLabel} · ${state.problems.length} numbers`;
     } else {
       const L = LEVELS[state.level];
       footMeta = `${OP_LABEL[state.op]} · ${L.label} (${L.min}–${L.max}) · ${state.count} problems`;
@@ -994,6 +1091,9 @@
     } else if (state.op === "cmp") {
       const t = { to20: "to 20", to100: "to 100", to1000: "to 1,000" }[state.cmpset] || "compare";
       $("#previewTag").textContent = `Comparing · ${t}`;
+    } else if (state.op === "eo") {
+      const t = { to20: "to 20", to100: "to 100", to1000: "to 1,000" }[state.eoset] || "even & odd";
+      $("#previewTag").textContent = `Even & odd · ${t}`;
     } else {
       const L = LEVELS[state.level];
       $("#previewTag").textContent = `${OP_LABEL[state.op]} · ${L.label}`;
@@ -1024,7 +1124,7 @@
       btn.classList.add("is-active");
       state[key] = cast(btn.dataset[key]); // data-op→op, data-level→level, data-cols→cols, data-table→table, data-interval→interval
       if (key === "op") applyOpVisibility();
-      if (key === "op" || key === "level" || key === "table" || key === "interval" || key === "total" || key === "fam" || key === "prec" || key === "coinset" || key === "fracset" || key === "pvset" || key === "roundset" || key === "cmpset") generate();
+      if (key === "op" || key === "level" || key === "table" || key === "interval" || key === "total" || key === "fam" || key === "prec" || key === "coinset" || key === "fracset" || key === "pvset" || key === "roundset" || key === "cmpset" || key === "eoset") generate();
       refresh();
     });
   }
@@ -1043,6 +1143,7 @@
     const isPlace = state.op === "place";
     const isRound = state.op === "round";
     const isCmp = state.op === "cmp";
+    const isEo = state.op === "eo";
     const tableField = $("#tableField");
     const intervalField = $("#intervalField");
     const totalField = $("#totalField");
@@ -1053,6 +1154,7 @@
     const pvsetField = $("#pvsetField");
     const roundsetField = $("#roundsetField");
     const cmpsetField = $("#cmpsetField");
+    const eosetField = $("#eosetField");
     const levelField = $("#levelField");
     const countField = $("#countField");
     const layoutField = $("#layoutField");
@@ -1066,9 +1168,10 @@
     if (pvsetField) pvsetField.hidden = !isPlace;
     if (roundsetField) roundsetField.hidden = !isRound;
     if (cmpsetField) cmpsetField.hidden = !isCmp;
-    if (levelField) levelField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound || isCmp;
-    if (countField) countField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound || isCmp;
-    if (layoutField) layoutField.hidden = isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound || isCmp;
+    if (eosetField) eosetField.hidden = !isEo;
+    if (levelField) levelField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound || isCmp || isEo;
+    if (countField) countField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound || isCmp || isEo;
+    if (layoutField) layoutField.hidden = isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound || isCmp || isEo;
   }
 
   function init() {
@@ -1085,6 +1188,7 @@
     wireSeg("#pvsetSeg", "pvset", (v) => v);
     wireSeg("#roundsetSeg", "roundset", (v) => v);
     wireSeg("#cmpsetSeg", "cmpset", (v) => v);
+    wireSeg("#eosetSeg", "eoset", (v) => v);
 
     $("#count").addEventListener("input", (e) => {
       state.count = parseInt(e.target.value, 10);
@@ -1184,6 +1288,11 @@
     const cmpset = params.get("set");
     if (["to20", "to100", "to1000"].includes(cmpset)) state.cmpset = cmpset;
 
+    // even/odd reuses the `set` param; its to20/to100/to1000 keys overlap
+    // comparing's, but op gates which one renders so cross-setting is harmless
+    const eoset = params.get("set");
+    if (["to20", "to100", "to1000"].includes(eoset)) state.eoset = eoset;
+
     let n = parseInt(params.get("n"), 10);
     if (n >= 10 && n <= 40) {
       n = n % 2 === 0 ? n : n - 1; // slider is even-stepped
@@ -1218,6 +1327,7 @@
     setActive("#pvsetSeg", "pvset", state.pvset);
     setActive("#roundsetSeg", "roundset", state.roundset);
     setActive("#cmpsetSeg", "cmpset", state.cmpset);
+    setActive("#eosetSeg", "eoset", state.eoset);
     applyOpVisibility();
 
     const count = $("#count");
