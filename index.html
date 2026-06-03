@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MathMint — Free Printable Math Worksheets in Seconds</title>
+  <meta name="description" content="Generate unlimited free printable math worksheets — addition, subtraction, multiplication, division and mixed practice. Pick a level, print, done. Built for parents and teachers. No signup." />
+  <meta name="keywords" content="free printable math worksheets, addition worksheets, subtraction worksheets, multiplication worksheets, division worksheets, math practice generator, worksheet generator" />
+  <link rel="canonical" href="https://herbeus.github.io/mathmint/" />
+  <meta property="og:title" content="MathMint — Free Printable Math Worksheets" />
+  <meta property="og:description" content="Pick a level. Print. Done. Unlimited free math worksheets with answer keys." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,900&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ============ APP / NO-PRINT ============ -->
+  <div class="app" id="app">
+    <header class="masthead">
+      <a class="brand" href="/mathmint/">
+        <span class="brand-mark">🌱</span>
+        <span class="brand-name">MathMint</span>
+      </a>
+      <nav class="masthead-nav">
+        <a href="#generator">Generator</a>
+        <a href="/mathmint/worksheets/">By grade</a>
+        <a href="#how">How it works</a>
+        <a href="#pro" class="nav-pro">Pro</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="hero-eyebrow">FRESHLY PRINTED MATH PRACTICE</div>
+      <h1 class="hero-title">Unlimited math worksheets,<br /><em>ready to print in seconds.</em></h1>
+      <p class="hero-sub">Pick an operation, choose a level, hit generate. New problems every click — with a matching answer key. Free, no signup, no nonsense.</p>
+      <a href="#generator" class="hero-cta">Build a worksheet →</a>
+      <div class="hero-stats">
+        <span><b id="madeCount">0</b> worksheets made here</span>
+        <span class="dot">•</span>
+        <span>Fact families → Telling time → Counting money</span>
+        <span class="dot">•</span>
+        <span>Answer keys included</span>
+      </div>
+    </section>
+
+    <!-- ============ GENERATOR ============ -->
+    <section class="generator" id="generator">
+      <div class="panel">
+        <h2 class="panel-title">Worksheet builder</h2>
+
+        <div class="field">
+          <label>Operation</label>
+          <div class="seg" id="opSeg" role="group" aria-label="Operation">
+            <button class="seg-btn is-active" data-op="add"><span>+</span>Addition</button>
+            <button class="seg-btn" data-op="sub"><span>−</span>Subtraction</button>
+            <button class="seg-btn" data-op="mul"><span>×</span>Multiply</button>
+            <button class="seg-btn" data-op="div"><span>÷</span>Divide</button>
+            <button class="seg-btn" data-op="mix"><span>±</span>Mixed</button>
+            <button class="seg-btn" data-op="times"><span>×</span>Times tables</button>
+            <button class="seg-btn" data-op="skip"><span>→</span>Skip count</button>
+            <button class="seg-btn" data-op="bonds"><span>∴</span>Number bonds</button>
+            <button class="seg-btn" data-op="fact"><span>△</span>Fact families</button>
+            <button class="seg-btn" data-op="time"><span>🕐</span>Telling time</button>
+            <button class="seg-btn" data-op="money"><span>💰</span>Money</button>
+          </div>
+        </div>
+
+        <div class="field" id="levelField">
+          <label>Level</label>
+          <div class="seg seg-level" id="levelSeg" role="group" aria-label="Level">
+            <button class="seg-btn is-active" data-level="1">Starter<small>0–10</small></button>
+            <button class="seg-btn" data-level="2">Easy<small>0–20</small></button>
+            <button class="seg-btn" data-level="3">Medium<small>0–100</small></button>
+            <button class="seg-btn" data-level="4">Hard<small>0–1000</small></button>
+          </div>
+        </div>
+
+        <div class="field" id="tableField" hidden>
+          <label>Which times table?</label>
+          <div class="seg seg-table" id="tableSeg" role="group" aria-label="Times table">
+            <button class="seg-btn is-active" data-table="2">2×</button>
+            <button class="seg-btn" data-table="3">3×</button>
+            <button class="seg-btn" data-table="4">4×</button>
+            <button class="seg-btn" data-table="5">5×</button>
+            <button class="seg-btn" data-table="6">6×</button>
+            <button class="seg-btn" data-table="7">7×</button>
+            <button class="seg-btn" data-table="8">8×</button>
+            <button class="seg-btn" data-table="9">9×</button>
+            <button class="seg-btn" data-table="10">10×</button>
+            <button class="seg-btn" data-table="11">11×</button>
+            <button class="seg-btn" data-table="12">12×</button>
+          </div>
+        </div>
+
+        <div class="field" id="intervalField" hidden>
+          <label>Count by</label>
+          <div class="seg seg-interval" id="intervalSeg" role="group" aria-label="Count by">
+            <button class="seg-btn" data-interval="2">2s</button>
+            <button class="seg-btn is-active" data-interval="5">5s</button>
+            <button class="seg-btn" data-interval="10">10s</button>
+          </div>
+        </div>
+
+        <div class="field" id="totalField" hidden>
+          <label>Make (the whole)</label>
+          <div class="seg seg-total" id="totalSeg" role="group" aria-label="Number bond total">
+            <button class="seg-btn" data-total="5">5</button>
+            <button class="seg-btn is-active" data-total="10">10</button>
+            <button class="seg-btn" data-total="20">20</button>
+          </div>
+        </div>
+
+        <div class="field" id="famField" hidden>
+          <label>Family type</label>
+          <div class="seg seg-fam" id="famSeg" role="group" aria-label="Fact family type">
+            <button class="seg-btn is-active" data-fam="as">+ −</button>
+            <button class="seg-btn" data-fam="md">× ÷</button>
+          </div>
+        </div>
+
+        <div class="field" id="precField" hidden>
+          <label>Read the clock to the…</label>
+          <div class="seg seg-prec" id="precSeg" role="group" aria-label="Time precision">
+            <button class="seg-btn is-active" data-prec="hour">Hour</button>
+            <button class="seg-btn" data-prec="half">Half hour</button>
+            <button class="seg-btn" data-prec="quarter">Quarter</button>
+            <button class="seg-btn" data-prec="five">5 minutes</button>
+          </div>
+        </div>
+
+        <div class="field" id="coinsetField" hidden>
+          <label>Coins &amp; bills</label>
+          <div class="seg seg-coinset" id="coinsetSeg" role="group" aria-label="Money set">
+            <button class="seg-btn" data-coinset="pennies">Pennies &amp; nickels</button>
+            <button class="seg-btn" data-coinset="dimes">+ Dimes</button>
+            <button class="seg-btn is-active" data-coinset="coins">All coins</button>
+            <button class="seg-btn" data-coinset="bills">Bills &amp; coins</button>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field" id="countField">
+            <label for="count">Problems: <b id="countVal">20</b></label>
+            <input type="range" id="count" min="10" max="40" step="2" value="20" />
+          </div>
+          <div class="field" id="layoutField">
+            <label>Layout</label>
+            <div class="seg seg-cols" id="colSeg" role="group" aria-label="Columns">
+              <button class="seg-btn is-active" data-cols="2">2 cols</button>
+              <button class="seg-btn" data-cols="3">3 cols</button>
+              <button class="seg-btn" data-cols="4">4 cols</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="title">Worksheet title</label>
+          <input type="text" id="title" class="text-in" value="Math Practice" maxlength="48" />
+        </div>
+
+        <label class="check">
+          <input type="checkbox" id="answerKey" />
+          <span>Print an answer key page</span>
+        </label>
+
+        <div class="panel-actions">
+          <button class="btn btn-primary" id="generateBtn">Generate ↻</button>
+          <button class="btn btn-ghost" id="printBtn">Print / Save PDF</button>
+        </div>
+        <p class="panel-hint">Tip: hit <b>Generate</b> again for a fresh set of problems — no two worksheets are the same.</p>
+      </div>
+
+      <!-- ============ PREVIEW ============ -->
+      <div class="preview-wrap">
+        <div class="preview-bar">
+          <span>Preview</span>
+          <span class="preview-tag" id="previewTag">Addition · Starter</span>
+        </div>
+        <div class="sheet-scaler">
+          <div id="sheetMount"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HOW ============ -->
+    <section class="how" id="how">
+      <h2 class="section-h">Three clicks to a printout</h2>
+      <div class="how-grid">
+        <div class="how-card">
+          <span class="how-num">01</span>
+          <h3>Pick & level up</h3>
+          <p>Choose the operation and a difficulty band that fits the kid in front of you — from single digits to four-digit work.</p>
+        </div>
+        <div class="how-card">
+          <span class="how-num">02</span>
+          <h3>Generate fresh</h3>
+          <p>Every click rolls brand-new problems. Print one today, regenerate, print a different one tomorrow. Forever free.</p>
+        </div>
+        <div class="how-card">
+          <span class="how-num">03</span>
+          <h3>Print or save PDF</h3>
+          <p>Clean, ink-friendly layout sized for US Letter & A4. Toggle the answer key when you need to grade fast.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ BROWSE BY GRADE ============ -->
+    <section class="ws-card" id="bygrade">
+      <h2 class="section-h">Or grab a worksheet built for the grade</h2>
+      <p class="ws-sub" style="text-align:left;margin:10px 0 0;max-width:760px">Each page opens the builder pre-set for that grade — Kindergarten through Grade 6, across addition, subtraction, multiplication, division and mixed practice.</p>
+      <div class="ws-linklist ws-linklist-grid" style="margin-top:18px">
+        <a href="/mathmint/worksheets/addition-worksheets-kindergarten">Addition · Kindergarten</a>
+        <a href="/mathmint/worksheets/subtraction-worksheets-grade-1">Subtraction · Grade 1</a>
+        <a href="/mathmint/worksheets/number-bonds-to-10">Number bonds · to 10</a>
+        <a href="/mathmint/worksheets/addition-subtraction-fact-families">Fact families · + −</a>
+        <a href="/mathmint/worksheets/skip-counting-by-5">Skip counting · by 5s</a>
+        <a href="/mathmint/worksheets/telling-time-to-the-hour">Telling time · to the hour</a>
+        <a href="/mathmint/worksheets/counting-coins-worksheets">Counting money · coins</a>
+        <a href="/mathmint/worksheets/multiplication-worksheets-grade-3">Multiplication · Grade 3</a>
+        <a href="/mathmint/worksheets/division-worksheets-grade-4">Division · Grade 4</a>
+        <a href="/mathmint/worksheets/mixed-worksheets-grade-5">Mixed · Grade 5</a>
+      </div>
+      <p class="panel-hint" style="margin-top:14px"><a href="/mathmint/worksheets/" style="font-weight:700">See all free worksheets by grade →</a></p>
+    </section>
+
+    <!-- ============ PRO ============ -->
+    <section class="pro" id="pro">
+      <div class="pro-inner">
+        <div class="pro-copy">
+          <div class="hero-eyebrow">MATHMINT PRO · COMING SOON</div>
+          <h2>For the classroom that prints by the ream.</h2>
+          <ul class="pro-list">
+            <li>Themed worksheet packs &amp; seasonal sets</li>
+            <li>Word problems, fractions, decimals &amp; time</li>
+            <li>Named student sets &amp; auto-graded answer keys</li>
+            <li>Save, reuse &amp; batch-export 30 sheets at once</li>
+            <li>Zero ads, ever</li>
+          </ul>
+          <form class="pro-form" id="proForm">
+            <input type="email" id="proEmail" placeholder="you@school.edu" required />
+            <button class="btn btn-primary" type="submit">Notify me</button>
+          </form>
+          <p class="pro-note" id="proNote">$5/mo when it launches. Early list gets the first month free.</p>
+        </div>
+        <div class="pro-price">
+          <div class="price-tag">
+            <span class="price-amt">$5</span>
+            <span class="price-per">/ month</span>
+          </div>
+          <p>Unlimited everything. Cancel anytime. Cheaper than one workbook.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>🌱 MathMint</span>
+      <span>Made for parents &amp; teachers. Print all you want.</span>
+      <span>© 2026</span>
+    </footer>
+  </div>
+
+  <!-- ============ PRINT TARGET ============ -->
+  <div id="printArea" class="print-area" aria-hidden="true"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
