@@ -11,7 +11,7 @@
     3: { min: 0, max: 100,  label: "Medium" },
     4: { min: 0, max: 1000, label: "Hard" },
   };
-  const OP_LABEL = { add: "Addition", sub: "Subtraction", mul: "Multiply", div: "Divide", mix: "Mixed", times: "Times tables", skip: "Skip counting", bonds: "Number bonds", fact: "Fact families", time: "Telling time", money: "Counting money" };
+  const OP_LABEL = { add: "Addition", sub: "Subtraction", mul: "Multiply", div: "Divide", mix: "Mixed", times: "Times tables", skip: "Skip counting", bonds: "Number bonds", fact: "Fact families", time: "Telling time", money: "Counting money", frac: "Fractions" };
   const OP_SIGN  = { add: "+", sub: "−", mul: "×", div: "÷", times: "×" };
 
   // Skip counting: full-width sequence rows the kid fills in (count by 2s/5s/10s).
@@ -58,6 +58,18 @@
     bills:   { coins: ["nickel", "dime", "quarter"],         bills: ["one", "five"],cap: 1500, fmt: "dollars", min: 3, max: 6 },
   };
 
+  // Fractions: a shape (pie/circle or bar) split into equal parts with some
+  // shaded; the kid writes the fraction it shows (numerator over denominator).
+  // The "set" picks the denominators in play and whether circles, bars, or both
+  // appear — the same visual-read pattern as clocks and coins.
+  const FRAC_COUNT = 8;   // shapes per sheet (2 cols × 4 rows)
+  const FRAC_SETS = {
+    halves: { dens: [2, 3, 4],            shapes: ["pie", "bar"] }, // halves, thirds & quarters
+    pie:    { dens: [2, 3, 4, 5, 6, 8],   shapes: ["pie"] },        // fraction circles
+    bar:    { dens: [2, 3, 4, 5, 6, 8],   shapes: ["bar"] },        // fraction bars
+    harder: { dens: [2, 3, 4, 5, 6, 8, 10], shapes: ["pie", "bar"] }, // up to tenths
+  };
+
   const state = {
     op: "add",
     level: 1,
@@ -67,6 +79,7 @@
     fam: "as",     // fact-family type: "as" add/sub, "md" mult/div (op === "fact")
     prec: "hour",  // telling-time precision: hour/half/quarter/five (op === "time")
     coinset: "coins", // money set: pennies/dimes/coins/bills (op === "money")
+    fracset: "pie",   // fraction set: halves/pie/bar/harder (op === "frac")
     count: 20,
     cols: 2,
     title: "Math Practice",
@@ -258,6 +271,29 @@
       return;
     }
 
+    // Fractions: each problem is a shape (pie or bar) divided into `den` equal
+    // parts with `num` shaded (a proper fraction, 1 ≤ num < den). The kid reads
+    // the picture and writes num/den; the answer key fills both in.
+    if (state.op === "frac") {
+      const cfg = FRAC_SETS[state.fracset] || FRAC_SETS.pie;
+      const out = [];
+      const seen = new Set();
+      let guard = 0;
+      while (out.length < FRAC_COUNT && guard < FRAC_COUNT * 160) {
+        guard++;
+        const den = cfg.dens[rnd(0, cfg.dens.length - 1)];
+        const num = rnd(1, den - 1);
+        const shape = cfg.shapes[rnd(0, cfg.shapes.length - 1)];
+        const key = `${shape}-${num}-${den}`;
+        if (seen.has(key)) continue; // no identical shape+fraction twice on a sheet
+        seen.add(key);
+        out.push({ num, den, shape });
+      }
+      state.problems = out;
+      bumpCounter();
+      return;
+    }
+
     const seen = new Set();
     const out = [];
     let guard = 0;
@@ -416,6 +452,58 @@
     return `<span class="money-lab">Total</span><span class="money-blank${shown}">${val}</span><span class="money-unit">¢</span>`;
   }
 
+  // One fraction pie as inline SVG: a circle cut into `den` equal wedges, the
+  // first `num` shaded. Wedges are drawn clockwise from the top.
+  function fracPieSvg(num, den) {
+    const cx = 50, cy = 50, r = 44, P = Math.PI / 180;
+    let wedges = "";
+    for (let k = 0; k < den; k++) {
+      const a0 = (k * 360 / den) * P, a1 = ((k + 1) * 360 / den) * P;
+      const x0 = (cx + r * Math.sin(a0)).toFixed(2), y0 = (cy - r * Math.cos(a0)).toFixed(2);
+      const x1 = (cx + r * Math.sin(a1)).toFixed(2), y1 = (cy - r * Math.cos(a1)).toFixed(2);
+      const large = (360 / den) > 180 ? 1 : 0;
+      const cls = k < num ? "frac-part frac-part--on" : "frac-part";
+      wedges += `<path class="${cls}" d="M${cx} ${cy} L${x0} ${y0} A${r} ${r} 0 ${large} 1 ${x1} ${y1} Z"/>`;
+    }
+    return (
+      `<svg class="frac-svg frac-svg--pie" viewBox="0 0 100 100" role="img" aria-label="circle with ${num} of ${den} parts shaded">` +
+      wedges +
+      `</svg>`
+    );
+  }
+
+  // One fraction bar as inline SVG: a rectangle split into `den` equal columns,
+  // the first `num` shaded.
+  function fracBarSvg(num, den) {
+    const W = 124, H = 46, x0 = 2, y0 = 2, w = W - 4, h = H - 4;
+    const seg = w / den;
+    let parts = "";
+    for (let k = 0; k < den; k++) {
+      const cls = k < num ? "frac-part frac-part--on" : "frac-part";
+      parts += `<rect class="${cls}" x="${(x0 + k * seg).toFixed(2)}" y="${y0}" width="${seg.toFixed(2)}" height="${h}"/>`;
+    }
+    return (
+      `<svg class="frac-svg frac-svg--bar" viewBox="0 0 ${W} ${H}" role="img" aria-label="bar with ${num} of ${den} parts shaded">` +
+      parts +
+      `</svg>`
+    );
+  }
+
+  // The fraction the kid writes below the shape: numerator over a bar over
+  // denominator. Blanks on the worksheet; filled coral on the answer key.
+  function fracAnswer(p, showAnswers) {
+    const shown = showAnswers ? " shown" : "";
+    const nv = showAnswers ? String(p.num) : "";
+    const dv = showAnswers ? String(p.den) : "";
+    return (
+      `<span class="frac-write">` +
+      `<span class="frac-cell-n${shown}">${nv}</span>` +
+      `<span class="frac-bar"></span>` +
+      `<span class="frac-cell-d${shown}">${dv}</span>` +
+      `</span>`
+    );
+  }
+
   function sheetEl({ showAnswers, isKey }) {
     const sheet = document.createElement("div");
     sheet.className = "sheet";
@@ -447,6 +535,7 @@
     const isFact = state.op === "fact";
     const isTime = state.op === "time";
     const isMoney = state.op === "money";
+    const isFrac = state.op === "frac";
     const grid = document.createElement("div");
     grid.className = isSkip
       ? "problems problems--seq"
@@ -458,6 +547,8 @@
       ? "problems problems--time"
       : isMoney
       ? "problems problems--money"
+      : isFrac
+      ? "problems problems--frac"
       : "problems";
     // Skip-counting rows are full-width sequences; number bonds are a fixed 3-up
     // diagram grid; fact families a fixed 2-up triangle grid; telling time a
@@ -472,12 +563,20 @@
       ? "repeat(3, 1fr)"
       : isMoney
       ? "repeat(2, 1fr)"
+      : isFrac
+      ? "repeat(2, 1fr)"
       : `repeat(${state.cols}, 1fr)`;
-    grid.dataset.cols = isSkip ? 1 : isBonds ? 3 : isFact ? 2 : isTime ? 3 : isMoney ? 2 : state.cols; // lets CSS scale type/gaps so equations never fragment in narrow columns
+    grid.dataset.cols = isSkip ? 1 : isBonds ? 3 : isFact ? 2 : isTime ? 3 : isMoney ? 2 : isFrac ? 2 : state.cols; // lets CSS scale type/gaps so equations never fragment in narrow columns
     state.problems.forEach((p, i) => {
       const row = document.createElement("div");
       row.className = "problem";
-      if (isMoney) {
+      if (isFrac) {
+        row.classList.add("frac-cell");
+        row.innerHTML =
+          `<span class="p-num">${i + 1}.</span>` +
+          `<div class="frac-shape">${p.shape === "bar" ? fracBarSvg(p.num, p.den) : fracPieSvg(p.num, p.den)}</div>` +
+          `<div class="frac-ans">${fracAnswer(p, showAnswers)}</div>`;
+      } else if (isMoney) {
         row.classList.add("money-cell");
         row.innerHTML =
           `<span class="p-num">${i + 1}.</span>` +
@@ -556,6 +655,9 @@
     } else if (state.op === "money") {
       const setLabel = { pennies: "pennies & nickels", dimes: "pennies, nickels & dimes", coins: "coins to a dollar", bills: "bills & coins" }[state.coinset] || "coins";
       footMeta = `Counting money · ${setLabel} · ${state.problems.length} sets`;
+    } else if (state.op === "frac") {
+      const setLabel = { halves: "halves, thirds & quarters", pie: "fraction circles", bar: "fraction bars", harder: "up to tenths" }[state.fracset] || "fractions";
+      footMeta = `Fractions · ${setLabel} · ${state.problems.length} shapes`;
     } else {
       const L = LEVELS[state.level];
       footMeta = `${OP_LABEL[state.op]} · ${L.label} (${L.min}–${L.max}) · ${state.count} problems`;
@@ -586,6 +688,9 @@
     } else if (state.op === "money") {
       const t = { pennies: "pennies & nickels", dimes: "nickels & dimes", coins: "coins to a dollar", bills: "bills & coins" }[state.coinset] || "coins";
       $("#previewTag").textContent = `Counting money · ${t}`;
+    } else if (state.op === "frac") {
+      const t = { halves: "halves, thirds & quarters", pie: "fraction circles", bar: "fraction bars", harder: "up to tenths" }[state.fracset] || "fractions";
+      $("#previewTag").textContent = `Fractions · ${t}`;
     } else {
       const L = LEVELS[state.level];
       $("#previewTag").textContent = `${OP_LABEL[state.op]} · ${L.label}`;
@@ -616,7 +721,7 @@
       btn.classList.add("is-active");
       state[key] = cast(btn.dataset[key]); // data-op→op, data-level→level, data-cols→cols, data-table→table, data-interval→interval
       if (key === "op") applyOpVisibility();
-      if (key === "op" || key === "level" || key === "table" || key === "interval" || key === "total" || key === "fam" || key === "prec" || key === "coinset") generate();
+      if (key === "op" || key === "level" || key === "table" || key === "interval" || key === "total" || key === "fam" || key === "prec" || key === "coinset" || key === "fracset") generate();
       refresh();
     });
   }
@@ -631,12 +736,14 @@
     const isFact = state.op === "fact";
     const isTime = state.op === "time";
     const isMoney = state.op === "money";
+    const isFrac = state.op === "frac";
     const tableField = $("#tableField");
     const intervalField = $("#intervalField");
     const totalField = $("#totalField");
     const famField = $("#famField");
     const precField = $("#precField");
     const coinsetField = $("#coinsetField");
+    const fracsetField = $("#fracsetField");
     const levelField = $("#levelField");
     const countField = $("#countField");
     const layoutField = $("#layoutField");
@@ -646,9 +753,10 @@
     if (famField) famField.hidden = !isFact;
     if (precField) precField.hidden = !isTime;
     if (coinsetField) coinsetField.hidden = !isMoney;
-    if (levelField) levelField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney;
-    if (countField) countField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney;
-    if (layoutField) layoutField.hidden = isSkip || isBonds || isFact || isTime || isMoney;
+    if (fracsetField) fracsetField.hidden = !isFrac;
+    if (levelField) levelField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac;
+    if (countField) countField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac;
+    if (layoutField) layoutField.hidden = isSkip || isBonds || isFact || isTime || isMoney || isFrac;
   }
 
   function init() {
@@ -661,6 +769,7 @@
     wireSeg("#famSeg", "fam", (v) => v);
     wireSeg("#precSeg", "prec", (v) => v);
     wireSeg("#coinsetSeg", "coinset", (v) => v);
+    wireSeg("#fracsetSeg", "fracset", (v) => v);
 
     $("#count").addEventListener("input", (e) => {
       state.count = parseInt(e.target.value, 10);
@@ -743,6 +852,10 @@
     const coinset = params.get("set");
     if (["pennies", "dimes", "coins", "bills"].includes(coinset)) state.coinset = coinset;
 
+    // fractions reuse the `set` param; value spaces are disjoint from money's
+    const fracset = params.get("set");
+    if (["halves", "pie", "bar", "harder"].includes(fracset)) state.fracset = fracset;
+
     let n = parseInt(params.get("n"), 10);
     if (n >= 10 && n <= 40) {
       n = n % 2 === 0 ? n : n - 1; // slider is even-stepped
@@ -773,6 +886,7 @@
     setActive("#famSeg", "fam", state.fam);
     setActive("#precSeg", "prec", state.prec);
     setActive("#coinsetSeg", "coinset", state.coinset);
+    setActive("#fracsetSeg", "fracset", state.fracset);
     applyOpVisibility();
 
     const count = $("#count");

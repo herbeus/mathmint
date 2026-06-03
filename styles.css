@@ -421,6 +421,26 @@ input[type="range"]::-moz-range-thumb {
 .money-blank { display: inline-block; min-width: 2.6em; border-bottom: 2px solid #111; text-align: center; }
 .money-blank.shown { border-color: var(--coral-deep); color: var(--coral-deep); font-weight: 700; }
 
+/* ---------- fractions ---------- */
+.problems--frac { grid-template-columns: repeat(2, 1fr); gap: 26px 28px; }
+.frac-cell {
+  position: relative; padding-left: 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+}
+.frac-cell .p-num { position: absolute; top: 0; left: 2px; font-size: 12px; min-width: 0; }
+.frac-shape { display: flex; align-items: center; justify-content: center; min-height: 96px; }
+.frac-svg--pie { width: 96px; height: 96px; display: block; }
+.frac-svg--bar { width: 168px; height: auto; display: block; }
+.frac-part { fill: #fffdf7; stroke: #111; stroke-width: 2; }
+.frac-part--on { fill: var(--mint); stroke: #111; stroke-width: 2; }
+.frac-write {
+  margin-top: 12px; display: inline-flex; flex-direction: column; align-items: center;
+  font-family: var(--font-mono); font-size: 20px; line-height: 1.1;
+}
+.frac-cell-n, .frac-cell-d { display: block; min-width: 1.6em; min-height: 1.1em; text-align: center; }
+.frac-bar { display: block; width: 2.0em; height: 2px; background: #111; margin: 3px 0; }
+.frac-cell-n.shown, .frac-cell-d.shown { color: var(--coral-deep); font-weight: 700; }
+
 .sheet-foot {
   margin-top: 40px; padding-top: 14px; border-top: 1px solid var(--line);
   display: flex; justify-content: space-between;
@@ -643,6 +663,8 @@ input[type="range"]::-moz-range-thumb {
 .ws-bond-demo .bond-svg { max-width: 220px; }
 .ws-bond-demo .fact-svg { max-width: 230px; }
 .ws-bond-demo .clock-svg { max-width: 190px; }
+.ws-bond-demo .frac-svg--pie { max-width: 132px; }
+.ws-bond-demo .frac-svg--bar { max-width: 230px; }
 .ws-bond-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; text-align: center; }
 .ws-bond-grid .ws-seq-title { text-align: center; }
 .ws-bond-grid .ws-bond-demo { margin: 8px auto 0; }
