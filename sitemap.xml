@@ -157,6 +157,18 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://mathmint.pages.dev/worksheets/addition-worksheets</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mathmint.pages.dev/worksheets/subtraction-worksheets</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://mathmint.pages.dev/worksheets/2-times-table-worksheet</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
@@ -536,6 +548,18 @@
   </url>
   <url>
     <loc>https://mathmint.pages.dev/de/zaehlen-in-schritten</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mathmint.pages.dev/de/addition</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mathmint.pages.dev/de/subtraktion</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
