@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://herbeus.github.io/mathmint/sitemap.xml
+Sitemap: https://mathmint.pages.dev/sitemap.xml

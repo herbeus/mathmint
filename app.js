@@ -772,7 +772,7 @@
     }
     foot.innerHTML =
       `<span>${footMeta}</span>` +
-      `<span>Free printable from herbeus.github.io/mathmint</span>`;
+      `<span>Free printable from mathmint.pages.dev</span>`;
     sheet.appendChild(foot);
 
     return sheet;
