@@ -11,7 +11,7 @@
     3: { min: 0, max: 100,  label: "Medium" },
     4: { min: 0, max: 1000, label: "Hard" },
   };
-  const OP_LABEL = { add: "Addition", sub: "Subtraction", mul: "Multiply", div: "Divide", mix: "Mixed", times: "Times tables", skip: "Skip counting", bonds: "Number bonds", fact: "Fact families", time: "Telling time", money: "Counting money", frac: "Fractions", place: "Place value", round: "Rounding" };
+  const OP_LABEL = { add: "Addition", sub: "Subtraction", mul: "Multiply", div: "Divide", mix: "Mixed", times: "Times tables", skip: "Skip counting", bonds: "Number bonds", fact: "Fact families", time: "Telling time", money: "Counting money", frac: "Fractions", place: "Place value", round: "Rounding", cmp: "Comparing numbers" };
   const OP_SIGN  = { add: "+", sub: "−", mul: "×", div: "÷", times: "×" };
 
   // Skip counting: full-width sequence rows the kid fills in (count by 2s/5s/10s).
@@ -96,6 +96,20 @@
     mixed:    { label: "nearest 10 or 100", modes: [{ t: 10, min: 11, max: 989 }, { t: 100, min: 101, max: 989 }] },
   };
 
+  // Comparing numbers: two numbers shown as proportional horizontal bars (longer
+  // bar = bigger number) above the number sentence "a ☐ b", where the kid writes
+  // the comparison symbol >, < or = in the box. The bars make "which is bigger"
+  // visible before the symbol is learned — the same see-it-first hook as the
+  // rounding number line. The "set" picks the number range (and the bar's scale
+  // max, so a 7 and a 12 read very differently on a to-20 line). ~1 in 5 pairs
+  // are equal so the = symbol gets real practice.
+  const CMP_COUNT = 8;    // pairs per sheet (2 cols × 4 rows)
+  const CMP_SETS = {
+    to20:   { min: 1,   max: 20,  barMax: 20,   label: "numbers to 20" },
+    to100:  { min: 10,  max: 99,  barMax: 100,  label: "numbers to 100" },
+    to1000: { min: 100, max: 999, barMax: 1000, label: "numbers to 1,000" },
+  };
+
   const state = {
     op: "add",
     level: 1,
@@ -108,6 +122,7 @@
     fracset: "pie",   // fraction set: halves/pie/bar/harder (op === "frac")
     pvset: "tens",    // place-value set: tens/hundreds/blocks (op === "place")
     roundset: "tens", // rounding set: tens/hundreds/mixed (op === "round")
+    cmpset: "to20",   // comparing set: to20/to100/to1000 (op === "cmp")
     count: 20,
     cols: 2,
     title: "Math Practice",
@@ -364,6 +379,35 @@
         if (seen.has(key)) continue; // no identical number+target twice on a sheet
         seen.add(key);
         out.push({ n, target: t, lo, hi, mid, answer });
+      }
+      state.problems = out;
+      bumpCounter();
+      return;
+    }
+
+    // Comparing numbers: each problem is a pair (a, b) drawn from the set's range.
+    // a and b each get a bar proportional to the set's barMax so the kid can see
+    // which is longer; the sign is >, < or =. ~1 in 5 pairs are forced equal so
+    // the = symbol gets practised; the rest are random and split roughly evenly.
+    if (state.op === "cmp") {
+      const cfg = CMP_SETS[state.cmpset] || CMP_SETS.to20;
+      const out = [];
+      const seen = new Set();
+      let guard = 0;
+      while (out.length < CMP_COUNT && guard < CMP_COUNT * 200) {
+        guard++;
+        const a = rnd(cfg.min, cfg.max);
+        let b;
+        if (Math.random() < 0.2) {
+          b = a; // force an equal pair now and then
+        } else {
+          b = rnd(cfg.min, cfg.max);
+        }
+        const key = `${a}-${b}`;
+        if (seen.has(key)) continue; // no identical pair twice on a sheet
+        seen.add(key);
+        const sign = a > b ? ">" : a < b ? "<" : "=";
+        out.push({ a, b, sign, barMax: cfg.barMax });
       }
       state.problems = out;
       bumpCounter();
@@ -677,6 +721,41 @@
     );
   }
 
+  // Two proportional bars for one comparing-numbers pair: a faint full-length
+  // track behind each bar (the common scale) and a mint bar whose length is the
+  // number's share of the set's barMax, each labelled with its number at the
+  // left. The same routine builds the SEO-page hero demo so the printed pair
+  // matches the landing page. A tiny min-length keeps even a "1" visible.
+  const CMP_X1 = 52, CMP_X2 = 292, CMP_H = 28; // bar track span + height, in SVG units
+  function compareBarsSvg(p) {
+    const maxLen = CMP_X2 - CMP_X1;
+    const w1 = Math.max(8, (p.a / p.barMax) * maxLen).toFixed(1);
+    const w2 = Math.max(8, (p.b / p.barMax) * maxLen).toFixed(1);
+    const y1 = 12, y2 = 52;
+    return (
+      `<svg class="cmp-svg" viewBox="0 0 300 92" role="img" aria-label="a bar for ${p.a} and a bar for ${p.b}">` +
+      `<rect class="cmp-track" x="${CMP_X1}" y="${y1}" width="${maxLen}" height="${CMP_H}" rx="3"/>` +
+      `<rect class="cmp-track" x="${CMP_X1}" y="${y2}" width="${maxLen}" height="${CMP_H}" rx="3"/>` +
+      `<rect class="cmp-bar" x="${CMP_X1}" y="${y1}" width="${w1}" height="${CMP_H}" rx="3"/>` +
+      `<rect class="cmp-bar" x="${CMP_X1}" y="${y2}" width="${w2}" height="${CMP_H}" rx="3"/>` +
+      `<text class="cmp-barlab" x="40" y="${y1 + 19}">${p.a}</text>` +
+      `<text class="cmp-barlab" x="40" y="${y2 + 19}">${p.b}</text>` +
+      `</svg>`
+    );
+  }
+
+  // The number sentence "a ☐ b" below the bars; the box is blank on the
+  // worksheet and shows the correct >, < or = symbol coral on the answer key.
+  function compareAnswer(p, showAnswers) {
+    const shown = showAnswers ? " shown" : "";
+    const sym = showAnswers ? p.sign : "";
+    return (
+      `<span class="cmp-num">${p.a}</span>` +
+      `<span class="cmp-box${shown}">${sym}</span>` +
+      `<span class="cmp-num">${p.b}</span>`
+    );
+  }
+
   function sheetEl({ showAnswers, isKey }) {
     const sheet = document.createElement("div");
     sheet.className = "sheet";
@@ -711,6 +790,7 @@
     const isFrac = state.op === "frac";
     const isPlace = state.op === "place";
     const isRound = state.op === "round";
+    const isCmp = state.op === "cmp";
     const grid = document.createElement("div");
     grid.className = isSkip
       ? "problems problems--seq"
@@ -728,6 +808,8 @@
       ? "problems problems--place"
       : isRound
       ? "problems problems--round"
+      : isCmp
+      ? "problems problems--cmp"
       : "problems";
     // Skip-counting rows are full-width sequences; number bonds are a fixed 3-up
     // diagram grid; fact families a fixed 2-up triangle grid; telling time a
@@ -748,12 +830,20 @@
       ? "repeat(2, 1fr)"
       : isRound
       ? "repeat(2, 1fr)"
+      : isCmp
+      ? "repeat(2, 1fr)"
       : `repeat(${state.cols}, 1fr)`;
-    grid.dataset.cols = isSkip ? 1 : isBonds ? 3 : isFact ? 2 : isTime ? 3 : isMoney ? 2 : isFrac ? 2 : isPlace ? 2 : isRound ? 2 : state.cols; // lets CSS scale type/gaps so equations never fragment in narrow columns
+    grid.dataset.cols = isSkip ? 1 : isBonds ? 3 : isFact ? 2 : isTime ? 3 : isMoney ? 2 : isFrac ? 2 : isPlace ? 2 : isRound ? 2 : isCmp ? 2 : state.cols; // lets CSS scale type/gaps so equations never fragment in narrow columns
     state.problems.forEach((p, i) => {
       const row = document.createElement("div");
       row.className = "problem";
-      if (isRound) {
+      if (isCmp) {
+        row.classList.add("cmp-cell");
+        row.innerHTML =
+          `<span class="p-num">${i + 1}.</span>` +
+          `<div class="cmp-bars">${compareBarsSvg(p)}</div>` +
+          `<div class="cmp-ans">${compareAnswer(p, showAnswers)}</div>`;
+      } else if (isRound) {
         row.classList.add("round-cell");
         row.innerHTML =
           `<span class="p-num">${i + 1}.</span>` +
@@ -859,6 +949,9 @@
     } else if (state.op === "round") {
       const setLabel = { tens: "to the nearest 10", hundreds: "to the nearest 100", mixed: "to the nearest 10 or 100" }[state.roundset] || "rounding";
       footMeta = `Rounding · ${setLabel} · ${state.problems.length} numbers`;
+    } else if (state.op === "cmp") {
+      const setLabel = { to20: "numbers to 20", to100: "numbers to 100", to1000: "numbers to 1,000" }[state.cmpset] || "comparing numbers";
+      footMeta = `Comparing numbers · ${setLabel} · ${state.problems.length} pairs`;
     } else {
       const L = LEVELS[state.level];
       footMeta = `${OP_LABEL[state.op]} · ${L.label} (${L.min}–${L.max}) · ${state.count} problems`;
@@ -898,6 +991,9 @@
     } else if (state.op === "round") {
       const t = { tens: "to the nearest 10", hundreds: "to the nearest 100", mixed: "nearest 10 or 100" }[state.roundset] || "rounding";
       $("#previewTag").textContent = `Rounding · ${t}`;
+    } else if (state.op === "cmp") {
+      const t = { to20: "to 20", to100: "to 100", to1000: "to 1,000" }[state.cmpset] || "compare";
+      $("#previewTag").textContent = `Comparing · ${t}`;
     } else {
       const L = LEVELS[state.level];
       $("#previewTag").textContent = `${OP_LABEL[state.op]} · ${L.label}`;
@@ -928,7 +1024,7 @@
       btn.classList.add("is-active");
       state[key] = cast(btn.dataset[key]); // data-op→op, data-level→level, data-cols→cols, data-table→table, data-interval→interval
       if (key === "op") applyOpVisibility();
-      if (key === "op" || key === "level" || key === "table" || key === "interval" || key === "total" || key === "fam" || key === "prec" || key === "coinset" || key === "fracset" || key === "pvset" || key === "roundset") generate();
+      if (key === "op" || key === "level" || key === "table" || key === "interval" || key === "total" || key === "fam" || key === "prec" || key === "coinset" || key === "fracset" || key === "pvset" || key === "roundset" || key === "cmpset") generate();
       refresh();
     });
   }
@@ -946,6 +1042,7 @@
     const isFrac = state.op === "frac";
     const isPlace = state.op === "place";
     const isRound = state.op === "round";
+    const isCmp = state.op === "cmp";
     const tableField = $("#tableField");
     const intervalField = $("#intervalField");
     const totalField = $("#totalField");
@@ -955,6 +1052,7 @@
     const fracsetField = $("#fracsetField");
     const pvsetField = $("#pvsetField");
     const roundsetField = $("#roundsetField");
+    const cmpsetField = $("#cmpsetField");
     const levelField = $("#levelField");
     const countField = $("#countField");
     const layoutField = $("#layoutField");
@@ -967,9 +1065,10 @@
     if (fracsetField) fracsetField.hidden = !isFrac;
     if (pvsetField) pvsetField.hidden = !isPlace;
     if (roundsetField) roundsetField.hidden = !isRound;
-    if (levelField) levelField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound;
-    if (countField) countField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound;
-    if (layoutField) layoutField.hidden = isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound;
+    if (cmpsetField) cmpsetField.hidden = !isCmp;
+    if (levelField) levelField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound || isCmp;
+    if (countField) countField.hidden = isTimes || isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound || isCmp;
+    if (layoutField) layoutField.hidden = isSkip || isBonds || isFact || isTime || isMoney || isFrac || isPlace || isRound || isCmp;
   }
 
   function init() {
@@ -985,6 +1084,7 @@
     wireSeg("#fracsetSeg", "fracset", (v) => v);
     wireSeg("#pvsetSeg", "pvset", (v) => v);
     wireSeg("#roundsetSeg", "roundset", (v) => v);
+    wireSeg("#cmpsetSeg", "cmpset", (v) => v);
 
     $("#count").addEventListener("input", (e) => {
       state.count = parseInt(e.target.value, 10);
@@ -1080,6 +1180,10 @@
     const roundset = params.get("set");
     if (["tens", "hundreds", "mixed"].includes(roundset)) state.roundset = roundset;
 
+    // comparing numbers reuses the `set` param; values disjoint from the others
+    const cmpset = params.get("set");
+    if (["to20", "to100", "to1000"].includes(cmpset)) state.cmpset = cmpset;
+
     let n = parseInt(params.get("n"), 10);
     if (n >= 10 && n <= 40) {
       n = n % 2 === 0 ? n : n - 1; // slider is even-stepped
@@ -1113,6 +1217,7 @@
     setActive("#fracsetSeg", "fracset", state.fracset);
     setActive("#pvsetSeg", "pvset", state.pvset);
     setActive("#roundsetSeg", "roundset", state.roundset);
+    setActive("#cmpsetSeg", "cmpset", state.cmpset);
     applyOpVisibility();
 
     const count = $("#count");

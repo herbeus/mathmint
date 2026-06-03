@@ -480,6 +480,26 @@ input[type="range"]::-moz-range-thumb {
 .rl-blank { display: inline-block; min-width: 2.8em; border-bottom: 2px solid #111; text-align: center; }
 .rl-blank.shown { border-color: var(--coral-deep); color: var(--coral-deep); font-weight: 700; }
 
+/* ---------- comparing numbers (bars + >, <, =) ---------- */
+.problems--cmp { grid-template-columns: repeat(2, 1fr); gap: 22px 28px; }
+.cmp-cell {
+  position: relative; padding-left: 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+}
+.cmp-cell .p-num { position: absolute; top: 0; left: 2px; font-size: 12px; min-width: 0; }
+.cmp-bars { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 64px; }
+.cmp-svg { width: 100%; max-width: 300px; height: auto; display: block; }
+.cmp-track { fill: #eef1f3; stroke: #cfd5da; stroke-width: 1; }
+.cmp-bar { fill: var(--mint); stroke: #111; stroke-width: 1.4; }
+.cmp-barlab { font-family: var(--font-mono); font-size: 15px; font-weight: 700; fill: #111; text-anchor: end; }
+.cmp-ans { margin-top: 12px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 22px; font-weight: 700; }
+.cmp-num { min-width: 1.4em; text-align: center; }
+.cmp-box {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.6em; height: 1.6em; border: 2px solid #111; border-radius: 6px; line-height: 1;
+}
+.cmp-box.shown { border-color: var(--coral-deep); color: var(--coral-deep); }
+
 .sheet-foot {
   margin-top: 40px; padding-top: 14px; border-top: 1px solid var(--line);
   display: flex; justify-content: space-between;

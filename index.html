@@ -40,7 +40,7 @@
       <div class="hero-stats">
         <span><b id="madeCount">0</b> worksheets made here</span>
         <span class="dot">•</span>
-        <span>Fractions → Place value → Rounding</span>
+        <span>Place value → Rounding → Comparing</span>
         <span class="dot">•</span>
         <span>Answer keys included</span>
       </div>
@@ -68,6 +68,7 @@
             <button class="seg-btn" data-op="frac"><span>◔</span>Fractions</button>
             <button class="seg-btn" data-op="place"><span>▦</span>Place value</button>
             <button class="seg-btn" data-op="round"><span>≈</span>Rounding</button>
+            <button class="seg-btn" data-op="cmp"><span>≷</span>Compare</button>
           </div>
         </div>
 
@@ -172,6 +173,15 @@
           </div>
         </div>
 
+        <div class="field" id="cmpsetField" hidden>
+          <label>Compare numbers up to…</label>
+          <div class="seg seg-total" id="cmpsetSeg" role="group" aria-label="Comparing set">
+            <button class="seg-btn is-active" data-cmpset="to20">20</button>
+            <button class="seg-btn" data-cmpset="to100">100</button>
+            <button class="seg-btn" data-cmpset="to1000">1,000</button>
+          </div>
+        </div>
+
         <div class="field-row">
           <div class="field" id="countField">
             <label for="count">Problems: <b id="countVal">20</b></label>
@@ -253,6 +263,7 @@
         <a href="/mathmint/worksheets/fraction-circles-worksheets">Fractions · circles</a>
         <a href="/mathmint/worksheets/base-ten-blocks-worksheets">Place value · base-ten blocks</a>
         <a href="/mathmint/worksheets/rounding-to-the-nearest-10-worksheets">Rounding · nearest 10</a>
+        <a href="/mathmint/worksheets/comparing-numbers-worksheets">Comparing numbers · greater/less than</a>
         <a href="/mathmint/worksheets/multiplication-worksheets-grade-3">Multiplication · Grade 3</a>
         <a href="/mathmint/worksheets/division-worksheets-grade-4">Division · Grade 4</a>
         <a href="/mathmint/worksheets/mixed-worksheets-grade-5">Mixed · Grade 5</a>
