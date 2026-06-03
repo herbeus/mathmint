@@ -169,6 +169,18 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://mathmint.pages.dev/worksheets/multiplication-worksheets</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mathmint.pages.dev/worksheets/division-worksheets</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://mathmint.pages.dev/worksheets/2-times-table-worksheet</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
@@ -560,6 +572,18 @@
   </url>
   <url>
     <loc>https://mathmint.pages.dev/de/subtraktion</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mathmint.pages.dev/de/multiplikation</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mathmint.pages.dev/de/division</loc>
     <lastmod>2026-06-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
